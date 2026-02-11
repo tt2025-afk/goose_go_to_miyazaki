@@ -90,7 +90,7 @@
         <div id="view-itinerary" class="block animate-fade-in">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold text-lg text-earth-800">當日行程</h3>
-                <span class="text-xs bg-earth-200 px-2 py-1 rounded text-earth-700" id="current-date-display">8/21 (五)</span>
+                <span class="text-xs bg-earth-200 px-2 py-1 rounded text-earth-700" id="current-date-display-itin">8/21 (五)</span>
             </div>
             
             <div class="relative border-l-2 border-earth-200 ml-3 space-y-6" id="itinerary-list">
@@ -106,26 +106,40 @@
 
         <!-- View: Accounting -->
         <div id="view-accounting" class="hidden animate-fade-in">
+            <!-- 總支出卡片 (顯示台幣) -->
             <div class="bg-earth-500 text-white p-5 rounded-2xl shadow-lg mb-6 relative">
-                <div class="text-earth-100 text-sm mb-1">總支出</div>
-                <div class="text-3xl font-bold" id="total-expense">¥0</div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="text-earth-100 text-sm mb-1">總行程支出 (TWD)</div>
+                        <div class="text-3xl font-bold" id="total-expense-twd">NT$ 0</div>
+                        <div class="text-xs text-earth-200 mt-1">匯率: <span id="display-rate">0.23</span> (1 JPY = <span id="display-rate-val">0.23</span> TWD)</div>
+                    </div>
+                    <!-- 結算按鈕 -->
+                    <button onclick="openSettlementModal()" class="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-2 rounded-lg border border-white/40 transition-colors backdrop-blur-sm flex items-center gap-1">
+                        <i class="fa-solid fa-calculator"></i> 結算/匯率
+                    </button>
+                </div>
+
                 <div class="mt-4 flex -space-x-2 overflow-hidden" id="member-avatars">
                     <!-- Avatars -->
                 </div>
-                
-                <!-- 結算按鈕 -->
-                <button onclick="openSettlementModal()" class="absolute right-4 top-4 bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-white/40 transition-colors backdrop-blur-sm">
-                    <i class="fa-solid fa-calculator mr-1"></i> 結算
-                </button>
             </div>
 
             <div class="flex justify-between items-center mb-2">
-                <h3 class="font-bold text-lg text-earth-800">消費紀錄</h3>
+                <div class="flex items-center gap-2">
+                    <h3 class="font-bold text-lg text-earth-800">消費紀錄</h3>
+                    <span class="text-xs bg-earth-200 px-2 py-1 rounded text-earth-700" id="current-date-display-acc">8/21 (五)</span>
+                </div>
                 <button onclick="openMemberModal()" class="text-xs text-sage-600 font-bold border border-sage-600 px-2 py-1 rounded hover:bg-sage-100">編輯成員</button>
             </div>
 
             <div class="space-y-3" id="expense-list">
                 <!-- Javascript will populate expenses -->
+            </div>
+             <!-- Empty State for Expenses -->
+             <div id="empty-expenses" class="hidden text-center py-8 text-earth-400 text-sm">
+                <i class="fa-solid fa-receipt text-2xl mb-2"></i>
+                <p>本日尚無消費紀錄</p>
             </div>
         </div>
 
@@ -148,7 +162,8 @@
         </button>
     </nav>
 
-    <!-- Modals (Itinerary, Expense, Members, Settlement) -->
+    <!-- Modals -->
+    <!-- Itinerary Modal -->
     <div id="modal-itinerary" class="fixed inset-0 bg-black/50 hidden z-50 flex items-end sm:items-center justify-center opacity-0 transition-opacity duration-300">
         <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 transform translate-y-full transition-transform duration-300" id="modal-itinerary-content">
             <div class="flex justify-between items-center mb-6">
@@ -182,6 +197,7 @@
         </div>
     </div>
 
+    <!-- Expense Modal -->
     <div id="modal-expense" class="fixed inset-0 bg-black/50 hidden z-50 flex items-end sm:items-center justify-center opacity-0 transition-opacity duration-300">
         <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 transform translate-y-full transition-transform duration-300" id="modal-expense-content">
             <div class="flex justify-between items-center mb-6">
@@ -197,16 +213,27 @@
                     <label class="block text-xs font-bold text-earth-500 mb-1">誰先付錢？</label>
                     <select id="exp-payer" class="w-full bg-earth-50 p-3 rounded-xl border-none focus:ring-2 focus:ring-sage-500 outline-none text-sm"></select>
                 </div>
-                <div class="flex gap-4">
+                
+                <!-- Amount and Currency (Update v4) -->
+                <div class="flex gap-3">
+                    <div class="w-1/3">
+                        <label class="block text-xs font-bold text-earth-500 mb-1">幣別</label>
+                        <select id="exp-currency" class="w-full bg-earth-50 p-3 rounded-xl border-none focus:ring-2 focus:ring-sage-500 outline-none text-sm font-bold text-earth-800">
+                            <option value="JPY">JPY ¥</option>
+                            <option value="TWD">TWD NT$</option>
+                        </select>
+                    </div>
                     <div class="flex-1">
-                        <label class="block text-xs font-bold text-earth-500 mb-1">金額 (¥)</label>
+                        <label class="block text-xs font-bold text-earth-500 mb-1">金額</label>
                         <input type="number" id="exp-amount" placeholder="0" class="w-full bg-earth-50 p-3 rounded-xl border-none focus:ring-2 focus:ring-sage-500 outline-none" required>
                     </div>
-                    <div class="w-1/3">
-                        <label class="block text-xs font-bold text-earth-500 mb-1">日期</label>
-                         <select id="exp-date" class="w-full bg-earth-50 p-3 rounded-xl border-none outline-none text-sm"></select>
-                    </div>
                 </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-earth-500 mb-1">日期</label>
+                    <select id="exp-date" class="w-full bg-earth-50 p-3 rounded-xl border-none outline-none text-sm"></select>
+                </div>
+
                 <div>
                     <div class="flex justify-between items-end mb-2">
                         <label class="block text-xs font-bold text-earth-500">分帳成員</label>
@@ -219,24 +246,30 @@
         </div>
     </div>
 
-    <!-- Settlement Modal (Corrected: Removed conflicting sm: classes) -->
+    <!-- Settlement Modal -->
     <div id="modal-settlement" class="fixed inset-0 bg-black/50 hidden z-50 flex items-end sm:items-center justify-center opacity-0 transition-opacity duration-300">
         <div class="bg-white w-full max-w-md h-[80vh] sm:h-auto sm:rounded-3xl rounded-t-3xl p-6 transform translate-y-full transition-transform duration-300 flex flex-col" id="modal-settlement-content">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-earth-900">結算清單</h3>
                 <button onclick="closeModal('modal-settlement')" class="text-earth-400 hover:text-earth-800"><i class="fa-solid fa-xmark text-2xl"></i></button>
             </div>
+            
             <div class="bg-earth-50 p-4 rounded-xl mb-4">
-                <label class="block text-xs font-bold text-earth-500 mb-1">匯率 (JPY → TWD)</label>
-                <div class="flex gap-2">
-                    <input type="number" id="settle-rate" value="0.22" step="0.001" class="flex-1 p-2 rounded border border-earth-200 text-lg font-bold text-earth-800 focus:outline-none focus:border-sage-500">
-                    <button onclick="renderSettlement()" class="bg-sage-500 text-white px-4 py-2 rounded font-bold hover:bg-sage-600">計算</button>
+                <label class="block text-xs font-bold text-earth-500 mb-2">匯率設定 (JPY → TWD)</label>
+                <div class="flex items-center gap-2">
+                    <input type="number" id="settle-rate" value="0.23" step="0.001" class="flex-1 min-w-0 p-3 rounded-xl border border-earth-200 text-lg font-bold text-earth-800 focus:outline-none focus:border-sage-500" placeholder="0.23">
+                    <button onclick="saveRateAndCalc()" class="shrink-0 bg-sage-500 text-white px-5 py-3 rounded-xl font-bold hover:bg-sage-600 whitespace-nowrap shadow-sm">
+                        儲存並計算
+                    </button>
                 </div>
+                <p class="text-[10px] text-earth-400 mt-2">修改匯率後會同步至首頁總支出</p>
             </div>
+
             <div class="flex-1 overflow-y-auto pr-1" id="settlement-results"></div>
         </div>
     </div>
 
+    <!-- Members Modal -->
     <div id="modal-members" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center opacity-0 transition-opacity duration-300">
         <div class="bg-white w-3/4 max-w-sm rounded-2xl p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="modal-members-content">
             <h3 class="text-lg font-bold text-earth-900 mb-4">編輯成員</h3>
@@ -256,17 +289,17 @@
         // ⚠️ 重要：請在此處填入您的 Firebase 設定
         // ==========================================
         const firebaseConfig = {
-            apiKey: "AIzaSyCEfhniotkKkTVllevVcULi1p7HXn79GGg",
-            authDomain: "miyazakitrip-acec0.firebaseapp.com",
-            projectId: "miyazakitrip-acec0",
-            storageBucket: "miyazakitrip-acec0.firebasestorage.app",
-            messagingSenderId: "681143086518",
-            appId: "1:681143086518:web:a471a2893bba96cb3d6517"
+            apiKey: "請填入您的API_KEY",
+            authDomain: "請填入您的PROJECT_ID.firebaseapp.com",
+            projectId: "請填入您的PROJECT_ID",
+            storageBucket: "請填入您的PROJECT_ID.appspot.com",
+            messagingSenderId: "您的SENDER_ID",
+            appId: "您的APP_ID"
         };
         // ==========================================
 
         let db;
-        let unsubscribe; // Listener detach function
+        let unsubscribe;
 
         // --- Data & State ---
         const tripDates = [
@@ -276,14 +309,14 @@
             { date: '2025-08-24', label: '8/24', day: '一' },
         ];
 
-        // Default Data (Used only if DB is empty)
         const defaultData = {
             itinerary: [
                 { id: 1, date: '2025-08-21', time: '06:20', title: '桃園機場起飛', location: 'Taoyuan Airport', notes: '虎航IT742' },
                 { id: 2, date: '2025-08-21', time: '09:20', title: '抵達宮崎機場', location: 'Miyazaki Airport', notes: '' },
             ],
             expenses: [],
-            members: ['媽媽', '大哥', '小毛', '翔哥', '筱葳', '耀哥', '筱婷', '寧寧', '志愷']
+            members: ['媽媽', '大哥', '小毛', '翔哥', '筱葳', '耀哥', '筱婷', '寧寧', '志愷'],
+            exchangeRate: 0.23
         };
 
         // App State
@@ -292,18 +325,21 @@
             currentView: 'itinerary', 
             itinerary: [],
             expenses: [],
-            members: [],
+            members: defaultData.members, // FIX: Initialize with defaults so list is not empty on load
+            exchangeRate: 0.23
         };
         
         let sortableInstance = null;
 
         // --- Initialization ---
-
         function init() {
-            // Check if Firebase config is set placeholder
             if (firebaseConfig.apiKey.includes("請填入")) {
-                alert("⚠️ 請注意：您尚未設定 Firebase API Key。\n請用文字編輯器打開此 HTML 檔案，填入您的設定，否則無法使用雲端同步功能。");
+                alert("⚠️ 請注意：您尚未設定 Firebase API Key。\n請用文字編輯器打開此 HTML 檔案，填入您的設定。");
                 document.getElementById('loading-overlay').style.display = 'none';
+                // Render with local default data even if no API key, so they see the UI
+                renderDateSlider();
+                renderItinerary();
+                renderExpenses();
                 return;
             }
 
@@ -319,10 +355,7 @@
         }
 
         // --- Firebase Realtime Sync ---
-        
         function setupRealtimeListener() {
-            // We store everything in a single document 'data' inside collection 'miyazaki_trip'
-            // In a real app, you might split collections, but for this scale, one doc is fine and efficient (1 read per sync)
             unsubscribe = db.collection('trips').doc('miyazaki_v1').onSnapshot((doc) => {
                 const overlay = document.getElementById('loading-overlay');
                 if (overlay) overlay.style.opacity = '0';
@@ -332,15 +365,16 @@
                     const data = doc.data();
                     state.itinerary = data.itinerary || [];
                     state.expenses = data.expenses || [];
-                    state.members = data.members || [];
+                    state.members = data.members || defaultData.members; // Fallback to default if empty
+                    state.exchangeRate = data.exchangeRate || 0.23;
                     
-                    // Refresh UI
+                    // UI Refresh
                     renderItinerary();
                     renderExpenses();
                     populateDateSelect();
                     populatePayerSelect();
+                    document.getElementById('settle-rate').value = state.exchangeRate;
                 } else {
-                    // Initialize DB with defaults if first time
                     db.collection('trips').doc('miyazaki_v1').set(defaultData);
                 }
             }, (error) => {
@@ -348,26 +382,23 @@
                 alert("同步失敗: " + error.message);
             });
 
-            // Initial UI setup
             renderDateSlider();
             updateWeather(state.currentDate);
         }
 
-        // --- Save Data (Push to Cloud) ---
         function saveData() {
             if (!db) return;
-            // Debounce could be added here, but direct write is fine for low frequency
             db.collection('trips').doc('miyazaki_v1').update({
                 itinerary: state.itinerary,
                 expenses: state.expenses,
-                members: state.members
+                members: state.members,
+                exchangeRate: state.exchangeRate
             }).catch(err => {
-                console.error("Save error", err);
-                // Fallback: Try set if doc doesn't exist
                 db.collection('trips').doc('miyazaki_v1').set({
                     itinerary: state.itinerary,
                     expenses: state.expenses,
-                    members: state.members
+                    members: state.members,
+                    exchangeRate: state.exchangeRate
                 });
             });
         }
@@ -384,7 +415,6 @@
         }
 
         // --- UI Rendering ---
-        // (Almost identical to previous version, just removing localStorage calls)
 
         function renderDateSlider() {
             const container = document.getElementById('date-slider');
@@ -398,9 +428,11 @@
                     state.currentDate = d.date;
                     renderDateSlider();
                     renderItinerary();
+                    renderExpenses();
                     updateWeather(d.date);
                     const found = tripDates.find(t => t.date === state.currentDate);
-                    document.getElementById('current-date-display').innerText = `${found.label} (${found.day})`;
+                    document.getElementById('current-date-display-itin').innerText = `${found.label} (${found.day})`;
+                    document.getElementById('current-date-display-acc').innerText = `${found.label} (${found.day})`;
                 };
                 container.appendChild(el);
             });
@@ -453,7 +485,7 @@
                     const itemsMap = new Map(currentItems.map(i => [i.id, i]));
                     const reorderedCurrentItems = newOrderIds.map(id => itemsMap.get(id)).filter(item => item !== undefined);
                     state.itinerary = [...otherItems, ...reorderedCurrentItems];
-                    saveData(); // Cloud push
+                    saveData();
                 }
             });
         }
@@ -461,51 +493,83 @@
         function renderExpenses() {
             const list = document.getElementById('expense-list');
             list.innerHTML = '';
-            let total = 0;
-            const sortedExpenses = [...state.expenses].sort((a,b) => b.id - a.id);
-            sortedExpenses.forEach(exp => {
-                total += parseInt(exp.amount);
-                const memberCount = exp.sharedBy.length;
-                const perPerson = memberCount > 0 ? Math.round(exp.amount / memberCount) : 0;
-                const dateObj = tripDates.find(d => d.date === exp.date);
-                const dateLabel = dateObj ? dateObj.label : exp.date.substring(5).replace('-', '/');
-                const payerName = exp.payer ? exp.payer : (state.members.length > 0 ? state.members[0] : '未知');
-                const el = document.createElement('div');
-                el.className = 'bg-white p-4 rounded-xl shadow-sm border border-earth-100 flex justify-between items-center';
-                el.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="bg-sage-100 w-10 h-10 rounded-full flex items-center justify-center text-sage-600 flex-shrink-0"><i class="fa-solid fa-utensils"></i></div>
-                        <div class="min-w-0">
-                            <div class="font-bold text-earth-800 truncate">${exp.title}</div>
-                            <div class="text-xs text-earth-400 truncate">${dateLabel} • ${payerName}墊付</div>
-                            <div class="text-[10px] text-earth-400 truncate text-earth-300">分攤: ${exp.sharedBy.length}人</div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-shrink-0 ml-2">
-                        <div class="font-bold text-earth-900">¥${parseInt(exp.amount).toLocaleString()}</div>
-                        <div class="text-[10px] text-earth-400">每人 ¥${perPerson.toLocaleString()}</div>
-                        <button onclick="deleteExpense(${exp.id})" class="text-red-300 text-xs mt-1 hover:text-red-500">刪除</button>
-                    </div>`;
-                list.appendChild(el);
+            
+            // 1. Calculate Grand Total (All dates)
+            let totalTWD = 0;
+            state.expenses.forEach(exp => {
+                const amt = parseInt(exp.amount);
+                // Default to JPY if currency not set (legacy data)
+                const curr = exp.currency || 'JPY';
+                if (curr === 'JPY') {
+                    totalTWD += Math.round(amt * state.exchangeRate);
+                } else {
+                    totalTWD += amt; // Already TWD
+                }
             });
-            document.getElementById('total-expense').innerText = `¥${total.toLocaleString()}`;
+
+            // Update Header Display
+            document.getElementById('total-expense-twd').innerText = `NT$ ${totalTWD.toLocaleString()}`;
+            document.getElementById('display-rate').innerText = state.exchangeRate;
+            document.getElementById('display-rate-val').innerText = state.exchangeRate;
+
+            // 2. Filter and Render List (Current Date ONLY)
+            const dailyExpenses = state.expenses.filter(e => e.date === state.currentDate);
+            dailyExpenses.sort((a,b) => b.id - a.id);
+
+            if (dailyExpenses.length === 0) {
+                document.getElementById('empty-expenses').classList.remove('hidden');
+            } else {
+                document.getElementById('empty-expenses').classList.add('hidden');
+                
+                dailyExpenses.forEach(exp => {
+                    const memberCount = exp.sharedBy.length;
+                    const amountVal = parseInt(exp.amount);
+                    const perPerson = memberCount > 0 ? Math.round(amountVal / memberCount) : 0;
+                    const payerName = exp.payer ? exp.payer : (state.members.length > 0 ? state.members[0] : '未知');
+                    
+                    // Currency Display Logic
+                    const curr = exp.currency || 'JPY';
+                    const symbol = curr === 'JPY' ? '¥' : 'NT$';
+                    const amountDisplay = `${symbol} ${amountVal.toLocaleString()}`;
+                    const perPersonDisplay = `${symbol} ${perPerson.toLocaleString()}`;
+
+                    const el = document.createElement('div');
+                    el.className = 'bg-white p-4 rounded-xl shadow-sm border border-earth-100 flex justify-between items-center';
+                    el.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="bg-sage-100 w-10 h-10 rounded-full flex items-center justify-center text-sage-600 flex-shrink-0"><i class="fa-solid fa-utensils"></i></div>
+                            <div class="min-w-0">
+                                <div class="font-bold text-earth-800 truncate">${exp.title}</div>
+                                <div class="text-xs text-earth-400 truncate">${payerName}墊付 • ${exp.sharedBy.length}人分攤</div>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0 ml-2">
+                            <div class="font-bold text-earth-900">${amountDisplay}</div>
+                            <div class="text-[10px] text-earth-400">每人 ${perPersonDisplay}</div>
+                            <button onclick="deleteExpense(${exp.id})" class="text-red-300 text-xs mt-1 hover:text-red-500">刪除</button>
+                        </div>`;
+                    list.appendChild(el);
+                });
+            }
+
             const avatarContainer = document.getElementById('member-avatars');
             avatarContainer.innerHTML = '';
             state.members.forEach((m, i) => {
                 const div = document.createElement('div');
-                div.className = `w-8 h-8 rounded-full bg-earth-${((i%3)+2)*100} border-2 border-white flex items-center justify-center text-[10px] font-bold text-earth-800`;
+                div.className = `w-8 h-8 rounded-full bg-earth-${((i%3)+2)*100} border-2 border-earth-500 flex items-center justify-center text-[10px] font-bold text-earth-800`;
                 div.innerText = m.charAt(0);
                 avatarContainer.appendChild(div);
             });
         }
 
+        // --- View Switching ---
         function switchView(viewName) {
             state.currentView = viewName;
             document.getElementById('view-itinerary').className = viewName === 'itinerary' ? 'block animate-fade-in' : 'hidden';
             document.getElementById('view-accounting').className = viewName === 'accounting' ? 'block animate-fade-in' : 'hidden';
             const btnItin = document.getElementById('nav-itinerary');
             const btnAcc = document.getElementById('nav-accounting');
-            if(viewName === 'itinerary') {
+             if(viewName === 'itinerary') {
                 btnItin.className = 'nav-item w-full py-2 flex flex-col items-center gap-1 text-earth-800 transition-colors';
                 btnItin.querySelector('i').className = 'fa-solid fa-map-location-dot text-xl'; 
                 btnAcc.className = 'nav-item w-full py-2 flex flex-col items-center gap-1 text-earth-400 transition-colors';
@@ -552,7 +616,7 @@
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        // CRUD with Cloud Save
+        // CRUD
         document.getElementById('form-itinerary').addEventListener('submit', (e) => {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
@@ -604,16 +668,20 @@
         function toggleAllMembers() { const checkboxes = document.querySelectorAll('#split-members-container input[type="checkbox"]'); const allChecked = Array.from(checkboxes).every(cb => cb.checked); checkboxes.forEach(cb => cb.checked = !allChecked); updateToggleLabel(); }
         function updateToggleLabel() { const checkboxes = document.querySelectorAll('#split-members-container input[type="checkbox"]'); const allChecked = Array.from(checkboxes).every(cb => cb.checked); document.getElementById('btn-toggle-members').innerText = allChecked ? '取消全選' : '全選'; }
 
+        // Expense Form Submit (Modified to save currency)
         document.getElementById('form-expense').addEventListener('submit', (e) => {
             e.preventDefault();
             const title = document.getElementById('exp-title').value;
             const payer = document.getElementById('exp-payer').value;
             const amount = document.getElementById('exp-amount').value;
             const date = document.getElementById('exp-date').value;
+            const currency = document.getElementById('exp-currency').value; // Get selected currency
+            
             const checkboxes = document.querySelectorAll('#split-members-container input[type="checkbox"]:checked');
             const sharedBy = Array.from(checkboxes).map(cb => cb.value);
             if (sharedBy.length === 0) { alert('請至少選擇一位分帳成員'); return; }
-            state.expenses.push({ id: Date.now(), title, payer, amount, date, sharedBy });
+            
+            state.expenses.push({ id: Date.now(), title, payer, amount, currency, date, sharedBy });
             saveData(); closeModal('modal-expense');
         });
 
@@ -630,17 +698,53 @@
         function addMember() { const name = document.getElementById('new-member-name').value.trim(); if (name) { state.members.push(name); document.getElementById('new-member-name').value = ''; saveData(); renderMembersList(); populatePayerSelect(); }}
         function removeMember(index) { state.members.splice(index, 1); saveData(); renderMembersList(); populatePayerSelect(); }
 
-        function openSettlementModal() { renderSettlement(); openModal('modal-settlement'); }
+        // --- Settlement ---
+        function openSettlementModal() { 
+            // Update input with current stored rate
+            document.getElementById('settle-rate').value = state.exchangeRate;
+            renderSettlement(); 
+            openModal('modal-settlement'); 
+        }
+
+        function saveRateAndCalc() {
+            const newRate = parseFloat(document.getElementById('settle-rate').value);
+            if(newRate && newRate > 0) {
+                state.exchangeRate = newRate;
+                saveData(); // Push new rate to cloud so everyone sees consistent TWD total
+                renderExpenses(); // Update background view
+                renderSettlement(); // Update list
+            }
+        }
+
         function renderSettlement() {
-            const rate = parseFloat(document.getElementById('settle-rate').value) || 0.22;
+            const rate = state.exchangeRate;
             const resultContainer = document.getElementById('settlement-results');
             let balances = {}; state.members.forEach(m => balances[m] = 0);
+            
             state.expenses.forEach(exp => {
-                const amount = parseInt(exp.amount); const payer = exp.payer || (state.members.length > 0 ? state.members[0] : null);
-                if (payer && balances.hasOwnProperty(payer)) balances[payer] += amount;
+                const rawAmount = parseInt(exp.amount);
+                const curr = exp.currency || 'JPY';
+                
+                // Normalize everything to TWD for debt calculation
+                let amountTWD;
+                if (curr === 'JPY') {
+                    amountTWD = Math.round(rawAmount * rate);
+                } else {
+                    amountTWD = rawAmount; // Already TWD
+                }
+
+                const payer = exp.payer || (state.members.length > 0 ? state.members[0] : null);
+                if (payer && balances.hasOwnProperty(payer)) balances[payer] += amountTWD;
+                
                 const splitCount = exp.sharedBy.length;
-                if (splitCount > 0) { const splitAmount = amount / splitCount; exp.sharedBy.forEach(member => { if(balances.hasOwnProperty(member)) balances[member] -= splitAmount; }); }
+                if (splitCount > 0) { 
+                    const splitAmount = amountTWD / splitCount; 
+                    exp.sharedBy.forEach(member => { 
+                        if(balances.hasOwnProperty(member)) balances[member] -= splitAmount; 
+                    }); 
+                }
             });
+            
             let debtors = []; let creditors = [];
             for (const [member, amount] of Object.entries(balances)) { if (amount < -1) debtors.push({ member, amount }); if (amount > 1) creditors.push({ member, amount }); }
             debtors.sort((a, b) => a.amount - b.amount); creditors.sort((a, b) => b.amount - a.amount);
@@ -652,12 +756,15 @@
                 debtor.amount += amount; creditor.amount -= amount;
                 if (Math.abs(debtor.amount) < 1) i++; if (creditor.amount < 1) j++;
             }
+            
             resultContainer.innerHTML = '';
             if (transactions.length === 0) { resultContainer.innerHTML = `<div class="text-center text-earth-400 py-10"><i class="fa-solid fa-check-circle text-4xl mb-2 text-sage-500"></i><p>帳目已平衡</p></div>`; return; }
+            
             transactions.forEach(t => {
-                const twd = Math.round(t.amount * rate); const jpy = Math.round(t.amount);
+                // Amounts are already in TWD
+                const twd = Math.round(t.amount);
                 const el = document.createElement('div'); el.className = 'bg-white border border-earth-100 p-4 rounded-xl mb-3 shadow-sm flex items-center justify-between';
-                el.innerHTML = `<div class="flex items-center gap-2"><div class="font-bold text-earth-800">${t.from}</div><i class="fa-solid fa-arrow-right text-sage-500 text-sm"></i><div class="font-bold text-earth-800">${t.to}</div></div><div class="text-right"><div class="text-lg font-bold text-earth-900">NT$ ${twd.toLocaleString()}</div><div class="text-xs text-earth-400">¥ ${jpy.toLocaleString()}</div></div>`;
+                el.innerHTML = `<div class="flex items-center gap-2"><div class="font-bold text-earth-800">${t.from}</div><i class="fa-solid fa-arrow-right text-sage-500 text-sm"></i><div class="font-bold text-earth-800">${t.to}</div></div><div class="text-right"><div class="text-lg font-bold text-earth-900">NT$ ${twd.toLocaleString()}</div></div>`;
                 resultContainer.appendChild(el);
             });
         }
